@@ -1,0 +1,11 @@
+# Configuration for librarian-puppet. For example:
+# 
+forge "http://forge.puppetlabs.com"
+# 
+mod "puppetlabs/apt"
+mod "puppetlabs/stdlib"
+mod "puppetlabs/java"
+mod "puppetlabs/mysql"
+mod "puppetlabs/vcsrepo"
+
+mod 'hadoop', :path => '/vagrant/puppet/local-modules/hadoop'
