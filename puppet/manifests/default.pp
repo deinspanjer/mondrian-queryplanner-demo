@@ -6,6 +6,7 @@ package { ["vim",
   ensure => present,
 }
 
+
 $mysql_override_options = {
   'mysqld' => {
     'query_cache_limit' => '128M',
@@ -18,14 +19,12 @@ $mysql_override_options = {
     'timezone' => 'UTC',
   },
 }
-
 $mysql_users = {
   'foodmart@localhost' => {
     ensure        => 'present',
     password_hash => mysql_password('foodmart'),
   },
 }
-
 $mysql_grants = {
   'foodmart@localhost/*.*' => {
      ensure     => 'present',
@@ -35,14 +34,12 @@ $mysql_grants = {
      user       => 'foodmart@localhost',
   },
 }
-
 $mysql_databases = {
   'steelwheels' => {
     ensure  => 'present',
     charset => 'utf8',
   },
 }
-
 class { '::mysql::server':
   override_options => $mysql_override_options,
   databases        => $mysql_databases,
@@ -50,15 +47,25 @@ class { '::mysql::server':
   grants           => $mysql_grants,
 }
 
+
+
 class { 'java':
   distribution => 'jdk',
   version      => 'latest',
 }
 
+
+file_line { "java_home":
+  path => "/etc/profile",
+  line => "export JAVA_HOME=${java::java_home}",
+}
+
+
 class { '::mysql::bindings':
   java_enable => 1,
   require => [ Class['java'], Class['::mysql::server'] ],
 }
+
 
 package { ["ant",
            "maven"]:
@@ -66,7 +73,11 @@ package { ["ant",
   require => Class['java'],
 }
 
-include hadoop
+
+class { 'hadoop':
+  require => Class['java'],
+}
+
 
 file { '/src':
   ensure => 'directory',

@@ -4,8 +4,8 @@ forge "http://forge.puppetlabs.com"
 # 
 mod "puppetlabs/apt"
 mod "puppetlabs/stdlib"
-mod "puppetlabs/java"
 mod "puppetlabs/mysql"
 mod "puppetlabs/vcsrepo"
 
+mod "puppetlabs/java", :git => "https://github.com/puppetlabs/puppetlabs-java"
 mod 'hadoop', :path => '/vagrant/puppet/local-modules/hadoop'
