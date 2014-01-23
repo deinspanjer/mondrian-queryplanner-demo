@@ -15,6 +15,11 @@ Tajo has a dependency on Apache Hadoop 2.2.0 which is installed in `/opt/hadoop-
 
 ## Getting started
 
+Requirements:
+
+First install both [Virtual Box](http://virtualbox.org) and
+[Vagrant](http://vagrantup.com/) for your platform.
+
 To build a fresh copy of the VM:
 
     $ git clone git@github.com:DEinspanjer/mondrian-queryplanner-demo.git
@@ -22,6 +27,7 @@ To build a fresh copy of the VM:
     $ vagrant up
     
 Alternatively, to just run a published build of the VM:
+
 	TODO: package and upload to box
     $ vagrant box add mondrian-queryplanner-demo http://<path/to/file.box>
 	$ vagrant up
