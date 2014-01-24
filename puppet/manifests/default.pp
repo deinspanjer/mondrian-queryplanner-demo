@@ -19,32 +19,8 @@ $mysql_override_options = {
     'timezone' => 'UTC',
   },
 }
-$mysql_users = {
-  'foodmart@localhost' => {
-    ensure        => 'present',
-    password_hash => mysql_password('foodmart'),
-  },
-}
-$mysql_grants = {
-  'foodmart@localhost/*.*' => {
-     ensure     => 'present',
-     options    => ['GRANT'],
-     privileges => ['ALL'],
-     table      => '*.*',
-     user       => 'foodmart@localhost',
-  },
-}
-$mysql_databases = {
-  'steelwheels' => {
-    ensure  => 'present',
-    charset => 'utf8',
-  },
-}
 class { '::mysql::server':
   override_options => $mysql_override_options,
-  databases        => $mysql_databases,
-  users            => $mysql_users,
-  grants           => $mysql_grants,
 }
 
 
@@ -78,6 +54,13 @@ class { 'hadoop':
   require => Class['java'],
 }
 
+include apt
+apt::ppa { 'ppa:chris-lea/protobuf': }
+package { ['protobuf-compiler', 'libprotobuf-dev']:
+  ensure => present,
+  require => Apt::Ppa['ppa:chris-lea/protobuf'],
+}
+# TODO: How will I reference these packages in my require statement later on?
 
 file { '/src':
   ensure => 'directory',
@@ -85,25 +68,38 @@ file { '/src':
   group => 'vagrant',
 }
 
-vcsrepo { '/src/mondrian-tajo':
+vcsrepo { '/src/tajo':
   ensure => latest,
   provider => git,
-  source => 'git://github.com/DEinspanjer/mondrian.git',
-  revision => 'tajo',
-  require => File['/src'],
-}
-
-vcsrepo { '/src/tajo-mondrian':
-  ensure => latest,
-  provider => git,
-  source => 'git://github.com/DEinspanjer/incubator-tajo.git',
+  source => 'git://github.com/deinspanjer/incubator-tajo.git',
   revision => 'mondrian',
   require => File['/src'],
 }
 
-include apt
-apt::ppa { 'ppa:chris-lea/protobuf': }
-package { ['protobuf-compiler', 'libprotobuf-dev']:
-  ensure => present,
-  require => Apt::Ppa['ppa:chris-lea/protobuf'],
+
+vcsrepo { '/src/mondrian':
+  ensure => latest,
+  provider => git,
+  source => 'git://github.com/deinspanjer/mondrian.git',
+  revision => 'tajo',
+  require => File['/src'],
+}
+
+mysql::db { 'steelwheels':
+  ensure   => 'present',
+  charset  => 'utf8',
+  collate  => 'utf8_swedish_ci',
+  user     => 'foodmart',
+  password => 'foodmart',
+  sql      => '/src/mondrian-tajo/demo/mysql/SteelWheels.sql',
+  require => [ VcsRepo['/src/mondrian'], Class['::mysql::server'] ],
+}
+
+mysql_grant { 'foodmart@localhost/*.*':
+  ensure     => 'present',
+  options    => ['GRANT'],
+  privileges => ['ALL'],
+  table      => '*.*',
+  user       => 'foodmart@localhost',
+  require => [ Class['::mysql::server'], Mysql::Db['steelwheels'] ],
 }
