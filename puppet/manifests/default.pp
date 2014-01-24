@@ -1,10 +1,14 @@
 # Note I'm not defining any nodes since this particular VM is a single instance box.
 
 # Some constants
-$src = "/src"
-$mondrian = "$src/mondrian"
-$tajo = "$src/tajo"
 $github_base = "git://github.com/deinspanjer"
+$src = "/src"
+
+$mondrian_src = "$src/mondrian"
+
+$tajo_src = "$src/tajo"
+$tajo_dist = "${tajo_src}/tajo-dist"
+$tajo_home = "${tajo_dist}/target/tajo-0.8.0-SNAPSHOT"
 
 
 package { ["vim",
@@ -21,8 +25,6 @@ $mysql_override_options = {
     "query_cache_type"  => "1",
   },
   "mysqld_safe" => {
-    # Set the MySQL timezone.
-    # @see http://stackoverflow.com/questions/947299/how-do-i-make-mysqls-now-and-curdate-functions-use-utc
     "timezone" => "UTC",
   },
 }
@@ -38,9 +40,11 @@ class { "java":
 }
 
 
-file_line { "java_home":
-  path => "/etc/profile",
-  line => "export JAVA_HOME=${java::java_home}",
+file { "java_home":
+  path    => "/etc/profile.d/java-path.sh",
+  content => "export JAVA_HOME=${java::java_home}\n",
+  owner   => root,
+  group   => root,
 }
 
 
@@ -76,7 +80,7 @@ file { "$src":
   group  => "vagrant",
 }
 
-vcsrepo { "$tajo":
+vcsrepo { "$tajo_src":
   ensure   => latest,
   provider => git,
   source   => "$github_base/incubator-tajo.git",
@@ -85,12 +89,28 @@ vcsrepo { "$tajo":
 }
 
 
-vcsrepo { "$mondrian":
+notify { "compile_tajo":
+  require => [ Class["hadoop"], VcsRepo["$tajo_src"] ],
+}
+
+file { "tajo_home":
+  path => "/etc/profile.d/tajo-path.sh",
+  content => "export TAJO_HOME=${tajo_home}\n",
+  owner   => root,
+  group   => root,
+  require => Notify["compile_tajo"],
+}
+
+vcsrepo { "$mondrian_src":
   ensure   => latest,
   provider => git,
   source   => "$github_base/mondrian.git",
   revision => "tajo",
   require  => File["$src"],
+}
+
+notify { "compile_mondrian":
+  require => [ Notify["compile_tajo"], VcsRepo["$mondrian_src"] ],
 }
 
 mysql::db { "steelwheels":
@@ -99,8 +119,8 @@ mysql::db { "steelwheels":
   collate  => "utf8_swedish_ci",
   user     => "foodmart",
   password => "foodmart",
-  sql      => "$mondrian/demo/mysql/SteelWheels.sql",
-  require  => [ VcsRepo["$mondrian"], Class["::mysql::server"] ],
+  sql      => "${mondrian_src}/demo/mysql/SteelWheels.sql",
+  require  => [ VcsRepo["$mondrian_src"], Class["::mysql::server"] ],
 }
 
 mysql_grant { "foodmart@localhost/*.*":
