@@ -1,5 +1,12 @@
 # Note I'm not defining any nodes since this particular VM is a single instance box.
 
+# Some constants
+$src = "/src"
+$mondrian = "$src/mondrian"
+$tajo = "$src/tajo"
+$github_base = "git://github.com/deinspanjer"
+
+
 package { ["vim",
            "curl",
            "bash"]:
@@ -63,27 +70,27 @@ package { ["protobuf-compiler",
 }
 # TODO: How will I reference these packages in my require statement later on?
 
-file { "/src":
+file { "$src":
   ensure => "directory",
   owner  => "vagrant",
   group  => "vagrant",
 }
 
-vcsrepo { "/src/tajo":
+vcsrepo { "$tajo":
   ensure   => latest,
   provider => git,
-  source   => "git://github.com/deinspanjer/incubator-tajo.git",
+  source   => "$github_base/incubator-tajo.git",
   revision => "mondrian",
-  require  => File["/src"],
+  require  => File["$src"],
 }
 
 
-vcsrepo { "/src/mondrian":
+vcsrepo { "$mondrian":
   ensure   => latest,
   provider => git,
-  source   => "git://github.com/deinspanjer/mondrian.git",
+  source   => "$github_base/mondrian.git",
   revision => "tajo",
-  require  => File["/src"],
+  require  => File["$src"],
 }
 
 mysql::db { "steelwheels":
@@ -92,8 +99,8 @@ mysql::db { "steelwheels":
   collate  => "utf8_swedish_ci",
   user     => "foodmart",
   password => "foodmart",
-  sql      => "/src/mondrian-tajo/demo/mysql/SteelWheels.sql",
-  require  => [ VcsRepo["/src/mondrian"], Class["::mysql::server"] ],
+  sql      => "$mondrian/demo/mysql/SteelWheels.sql",
+  require  => [ VcsRepo["$mondrian"], Class["::mysql::server"] ],
 }
 
 mysql_grant { "foodmart@localhost/*.*":
