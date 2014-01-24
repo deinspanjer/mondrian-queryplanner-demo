@@ -39,13 +39,13 @@ file_line { "java_home":
 
 class { '::mysql::bindings':
   java_enable => 1,
-  require => [ Class['java'], Class['::mysql::server'] ],
+  require     => [ Class['java'], Class['::mysql::server'] ],
 }
 
 
 package { ["ant",
            "maven"]:
-  ensure => present,
+  ensure  => present,
   require => Class['java'],
 }
 
@@ -57,32 +57,32 @@ class { 'hadoop':
 include apt
 apt::ppa { 'ppa:chris-lea/protobuf': }
 package { ['protobuf-compiler', 'libprotobuf-dev']:
-  ensure => present,
+  ensure  => present,
   require => Apt::Ppa['ppa:chris-lea/protobuf'],
 }
 # TODO: How will I reference these packages in my require statement later on?
 
 file { '/src':
   ensure => 'directory',
-  owner => 'vagrant',
-  group => 'vagrant',
+  owner  => 'vagrant',
+  group  => 'vagrant',
 }
 
 vcsrepo { '/src/tajo':
-  ensure => latest,
+  ensure   => latest,
   provider => git,
-  source => 'git://github.com/deinspanjer/incubator-tajo.git',
+  source   => 'git://github.com/deinspanjer/incubator-tajo.git',
   revision => 'mondrian',
-  require => File['/src'],
+  require  => File['/src'],
 }
 
 
 vcsrepo { '/src/mondrian':
-  ensure => latest,
+  ensure   => latest,
   provider => git,
-  source => 'git://github.com/deinspanjer/mondrian.git',
+  source   => 'git://github.com/deinspanjer/mondrian.git',
   revision => 'tajo',
-  require => File['/src'],
+  require  => File['/src'],
 }
 
 mysql::db { 'steelwheels':
@@ -92,7 +92,7 @@ mysql::db { 'steelwheels':
   user     => 'foodmart',
   password => 'foodmart',
   sql      => '/src/mondrian-tajo/demo/mysql/SteelWheels.sql',
-  require => [ VcsRepo['/src/mondrian'], Class['::mysql::server'] ],
+  require  => [ VcsRepo['/src/mondrian'], Class['::mysql::server'] ],
 }
 
 mysql_grant { 'foodmart@localhost/*.*':
