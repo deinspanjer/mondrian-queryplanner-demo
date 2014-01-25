@@ -170,8 +170,23 @@ exec { "start_tajo":
   logoutput => "true",
   timeout   => "30",
   user      => "vagrant",
-  returns   => ["0","2"],
   require   => File_line["tajo_env_hadoop_home"],
+}
+
+exec { "load_tajo_demo_data":
+  command   => "/bin/bash -c 'bin/tsql -f $tajo_home/demo/steelwheels/SteelWheels.sql'",
+  creates   => "/tmp/tajo-vagrant-demo-data-loaded",
+  cwd       => "$tajo_home",
+  logoutput => "true",
+  timeout   => "30",
+  user      => "vagrant",
+  require   => File_line["tajo_env_hadoop_home"],
+}
+
+file { "tajo_demo_data_loaded_flag":
+  path    => "/tmp/tajo-vagrant-demo-data-loaded",
+  content => "1",
+  require => Exec["load_tajo_demo_data"],
 }
 
 vcsrepo { "$mondrian_src":
