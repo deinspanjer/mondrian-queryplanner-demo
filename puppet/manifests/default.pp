@@ -72,7 +72,6 @@ package { ["protobuf-compiler",
   ensure  => present,
   require => Apt::Ppa["ppa:chris-lea/protobuf"],
 }
-# TODO: How will I reference these packages in my require statement later on?
 
 file { "$src":
   ensure => "directory",
@@ -96,7 +95,7 @@ exec { "compile_tajo":
   creates => "$tajo_dist/target/tajo-0.8.0-SNAPSHOT",
   cwd => "$tajo_src",
   user => "vagrant",
-  require => [ Class["hadoop"], VcsRepo["$tajo_src"] ],
+  require => [ Package["protobuf-compiler"], Class["hadoop"], VcsRepo["$tajo_src"] ],
 }
 
 file { "tajo_home":
