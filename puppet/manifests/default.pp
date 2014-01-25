@@ -7,8 +7,8 @@ $src = "/src"
 $mondrian_src = "$src/mondrian"
 
 $tajo_src = "$src/tajo"
-$tajo_dist = "${tajo_src}/tajo-dist"
-$tajo_home = "${tajo_dist}/target/tajo-0.8.0-SNAPSHOT"
+$tajo_dist = "$tajo_src/tajo-dist"
+$tajo_home = "$tajo_dist/target/tajo-0.8.0-SNAPSHOT"
 
 
 package { ["vim",
@@ -82,6 +82,8 @@ file { "$src":
 
 vcsrepo { "$tajo_src":
   ensure   => latest,
+  owner    => "vagrant",
+  group    => "vagrant",
   provider => git,
   source   => "$github_base/incubator-tajo.git",
   revision => "mondrian",
@@ -89,20 +91,26 @@ vcsrepo { "$tajo_src":
 }
 
 
-notify { "compile_tajo":
+exec { "compile_tajo":
+  command => "/bin/bash -c 'mvn package -DskipTests -Pdist'",
+  creates => "$tajo_dist/target/tajo-0.8.0-SNAPSHOT",
+  cwd => "$tajo_src",
+  user => "vagrant",
   require => [ Class["hadoop"], VcsRepo["$tajo_src"] ],
 }
 
 file { "tajo_home":
   path => "/etc/profile.d/tajo-path.sh",
-  content => "export TAJO_HOME=${tajo_home}\n",
+  content => "export TAJO_HOME=$tajo_home\n",
   owner   => root,
   group   => root,
-  require => Notify["compile_tajo"],
+  require => Exec["compile_tajo"],
 }
 
 vcsrepo { "$mondrian_src":
   ensure   => latest,
+  owner    => "vagrant",
+  group    => "vagrant",
   provider => git,
   source   => "$github_base/mondrian.git",
   revision => "tajo",
@@ -110,7 +118,7 @@ vcsrepo { "$mondrian_src":
 }
 
 notify { "compile_mondrian":
-  require => [ Notify["compile_tajo"], VcsRepo["$mondrian_src"] ],
+  require => [ Exec["compile_tajo"], VcsRepo["$mondrian_src"] ],
 }
 
 mysql::db { "steelwheels":
@@ -119,7 +127,7 @@ mysql::db { "steelwheels":
   collate  => "utf8_swedish_ci",
   user     => "foodmart",
   password => "foodmart",
-  sql      => "${mondrian_src}/demo/mysql/SteelWheels.sql",
+  sql      => "$mondrian_src/demo/mysql/SteelWheels.sql",
   require  => [ VcsRepo["$mondrian_src"], Class["::mysql::server"] ],
 }
 
