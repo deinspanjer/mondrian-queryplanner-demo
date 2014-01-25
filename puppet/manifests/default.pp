@@ -91,11 +91,12 @@ vcsrepo { "$tajo_src":
 
 
 exec { "compile_tajo":
-  command => "/bin/bash -c 'mvn package -DskipTests -Pdist'",
-  creates => "$tajo_dist/target/tajo-0.8.0-SNAPSHOT",
-  cwd => "$tajo_src",
-  user => "vagrant",
-  require => [ Package["protobuf-compiler"], Class["hadoop"], VcsRepo["$tajo_src"] ],
+  command   => "/bin/bash -c 'mvn package -DskipTests -Pdist'",
+  creates   => "$tajo_dist/target/tajo-0.8.0-SNAPSHOT",
+  cwd       => "$tajo_src",
+  logoutput => "true",
+  timeout   => "600",
+  require   => [ Package["protobuf-compiler"], Class["hadoop"], VcsRepo["$tajo_src"] ],
 }
 
 file { "tajo_home":
@@ -116,8 +117,13 @@ vcsrepo { "$mondrian_src":
   require  => File["$src"],
 }
 
-notify { "compile_mondrian":
-  require => [ Exec["compile_tajo"], VcsRepo["$mondrian_src"] ],
+exec { "compile_mondrian":
+  command   => "/bin/bash -c 'ant compile'",
+  creates   => "$mondrian_src/classes/",
+  cwd       => "$mondrian_src",
+  logoutput => "true",
+  timeout   => "600",
+  require   => [ Exec["compile_tajo"], VcsRepo["$mondrian_src"] ],
 }
 
 mysql::db { "steelwheels":
