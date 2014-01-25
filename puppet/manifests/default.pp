@@ -80,15 +80,19 @@ file { "$src":
 }
 
 vcsrepo { "$tajo_src":
-  ensure   => latest,
+  ensure   => "latest",
   owner    => "vagrant",
   group    => "vagrant",
-  provider => git,
+  provider => "git",
   source   => "$github_base/incubator-tajo.git",
   revision => "mondrian",
   require  => File["$src"],
 }
 
+notify { "compile_tajo_warn":
+  message => "Starting initial Tajo compilation.  This might take up to 10 minutes with no further messages until completion.",
+  before  => Exec["compile_tajo"],
+}
 
 exec { "compile_tajo":
   command   => "/bin/bash -c 'mvn package -DskipTests -Pdist'",
@@ -96,25 +100,31 @@ exec { "compile_tajo":
   cwd       => "$tajo_src",
   logoutput => "true",
   timeout   => "600",
+  user      => "vagrant",
   require   => [ Package["protobuf-compiler"], Class["hadoop"], VcsRepo["$tajo_src"] ],
 }
 
 file { "tajo_home":
   path => "/etc/profile.d/tajo-path.sh",
   content => "export TAJO_HOME=$tajo_home\n",
-  owner   => root,
-  group   => root,
+  owner   => "root",
+  group   => "root",
   require => Exec["compile_tajo"],
 }
 
 vcsrepo { "$mondrian_src":
-  ensure   => latest,
+  ensure   => "latest",
   owner    => "vagrant",
   group    => "vagrant",
-  provider => git,
+  provider => "git",
   source   => "$github_base/mondrian.git",
   revision => "tajo",
   require  => File["$src"],
+}
+
+notify { "compile_mondrian_warn":
+  message => "Starting initial Mondrian compilation.  This might take up to 10 minutes with no further messages until completion.",
+  before  => Exec["compile_mondrian"],
 }
 
 exec { "compile_mondrian":
@@ -123,7 +133,8 @@ exec { "compile_mondrian":
   cwd       => "$mondrian_src",
   logoutput => "true",
   timeout   => "600",
-  require   => [ Exec["compile_tajo"], VcsRepo["$mondrian_src"] ],
+  user      => "vagrant",
+  require   => [ File["tajo_home"], VcsRepo["$mondrian_src"] ],
 }
 
 mysql::db { "steelwheels":
