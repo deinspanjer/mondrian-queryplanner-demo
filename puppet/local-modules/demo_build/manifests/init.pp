@@ -149,7 +149,7 @@ class demo_build {
   }
   
   exec { "compile_mondrian":
-    command   => "/bin/bash -c 'ant cmdrunner'",
+    command   => "/bin/bash -c 'ant -Dtests.skip=true jar'",
     creates   => "$mondrian_src/classes/",
     cwd       => "$mondrian_src",
     logoutput => "true",
