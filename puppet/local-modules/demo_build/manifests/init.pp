@@ -29,6 +29,17 @@ class demo_build {
     group   => "vagrant",
     require => Class["hadoop"],
   }
+
+  file { "vagrant_ssh_known_host":
+    ensure  => "file",
+    path    => "/home/vagrant/.ssh/known_hosts",
+    content => generate("/usr/bin/ssh-keyscan","localhost"),
+    mode    => "600",
+    owner   => "vagrant",
+    group   => "vagrant",
+    replace => "false",
+    require => File["vagrant_ssh_private_key"],
+  }
   
   file { "$src":
     ensure => "directory",
@@ -106,7 +117,7 @@ class demo_build {
     logoutput => "true",
     timeout   => "30",
     user      => "vagrant",
-    require   => File_line["tajo_env_hadoop_home"],
+    require   => [ File["vagrant_ssh_known_host"], File_line["tajo_env_hadoop_home"] ],
   }
   
   exec { "load_tajo_demo_data":
