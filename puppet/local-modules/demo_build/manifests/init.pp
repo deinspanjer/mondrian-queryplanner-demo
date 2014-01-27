@@ -12,23 +12,21 @@ class demo_build {
   }
   
   # Some constants
-  $github_base = "git://github.com/deinspanjer"
-  $src = "/src"
-  
+  $github_base  = "git://github.com/deinspanjer"
+  $src          = "/src"
   $mondrian_src = "$src/mondrian"
-  
-  $tajo_src = "$src/tajo"
-  $tajo_dist = "$tajo_src/tajo-dist"
-  $tajo_home = "$tajo_dist/target/tajo-0.8.0-SNAPSHOT"
+  $tajo_src     = "$src/tajo"
+  $tajo_dist    = "$tajo_src/tajo-dist"
+  $tajo_home    = "$tajo_dist/target/tajo-0.8.0-SNAPSHOT"
   
   
   file { "vagrant_ssh_private_key":
-    ensure => "file",
-    path => "/home/vagrant/.ssh/id_rsa",
-    source => "puppet:///modules/demo_build/vagrant_insecure_private_key",
-    mode => "600",
-    owner => "vagrant",
-    group => "vagrant",
+    ensure  => "file",
+    path    => "/home/vagrant/.ssh/id_rsa",
+    source  => "puppet:///modules/demo_build/vagrant_insecure_private_key",
+    mode    => "600",
+    owner   => "vagrant",
+    group   => "vagrant",
     require => Class["hadoop"],
   }
   
@@ -60,13 +58,13 @@ class demo_build {
     logoutput => "true",
     timeout   => "600",
     user      => "vagrant",
-    require   => [ Package["protobuf-compiler"], Class["hadoop"], VcsRepo["$tajo_src"] ],
+    require   => [ Class["java"], Package["protobuf-compiler"], Class["hadoop"], VcsRepo["$tajo_src"] ],
   }
   
   file { "copy_tajo_demo_data":
-    path => "$tajo_home/demo",
-    source => "$tajo_dist/demo",
-    ensure => "directory",
+    path    => "$tajo_home/demo",
+    source  => "$tajo_dist/demo",
+    ensure  => "directory",
     recurse => "true",
     replace => "false",
     require => Exec["compile_tajo"],
@@ -80,7 +78,7 @@ class demo_build {
   }
   
   file { "tajo_home":
-    path => "/etc/profile.d/tajo-path.sh",
+    path    => "/etc/profile.d/tajo-path.sh",
     content => "export TAJO_HOME=$tajo_home\n",
     owner   => "root",
     group   => "root",
@@ -137,11 +135,12 @@ class demo_build {
     require  => File["$src"],
   }
 
-  file { "$mondrian_src/bin/demo.mondrian.properties":
-    source => "puppet:///modules/demo_build/demo.mondrian.properties",
-    owner => vagrant,
-    group => vagrant,
-    require   => VcsRepo["$mondrian_src"],
+  file { "mondrian_properties":
+    path    => "$mondrian_src/mondrian.properties",
+    source  => "puppet:///modules/demo_build/demo.mondrian.properties",
+    owner   => vagrant,
+    group   => vagrant,
+    require => VcsRepo["$mondrian_src"],
   }
   
   notify { "compile_mondrian_warn":
@@ -153,11 +152,10 @@ class demo_build {
     command   => "/bin/bash -c 'ant cmdrunner'",
     creates   => "$mondrian_src/classes/",
     cwd       => "$mondrian_src",
-    environment => ["driver.classpath=/usr/share/java/mysql-connector-java.jar"],
     logoutput => "true",
     timeout   => "600",
     user      => "vagrant",
-    require   => [ File["tajo_home"], VcsRepo["$mondrian_src"] ],
+    require   => [ Class["java"], File["mondrian_properties"], File["tajo_home"] ],
   }
   
   mysql::db { "steelwheels":
@@ -176,6 +174,6 @@ class demo_build {
     privileges => ["ALL"],
     table      => "*.*",
     user       => "foodmart@localhost",
-    require => [ Class["::mysql::server"], Mysql::Db["steelwheels"] ],
+    require    => [ Class["::mysql::server"], Mysql::Db["steelwheels"] ],
   }
 }
