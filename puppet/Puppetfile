@@ -8,4 +8,5 @@ mod "puppetlabs/mysql"
 mod "puppetlabs/vcsrepo"
 
 mod "puppetlabs/java", :git => "https://github.com/puppetlabs/puppetlabs-java"
-mod 'hadoop', :path => '/vagrant/puppet/local-modules/hadoop'
+mod "hadoop", :path => "/vagrant/puppet/local-modules/hadoop"
+mod "demo_build", :path => "/vagrant/puppet/local-modules/demo_build"
