@@ -136,6 +136,13 @@ class demo_build {
     revision => "tajo",
     require  => File["$src"],
   }
+
+  file { "$mondrian_src/bin/demo.mondrian.properties":
+    source => "puppet:///modules/demo_build/demo.mondrian.properties",
+    owner => vagrant,
+    group => vagrant,
+    require   => VcsRepo["$mondrian_src"],
+  }
   
   notify { "compile_mondrian_warn":
     message => "Starting Mondrian compilation.  This might take up to 10 minutes with no further messages until completion.",
@@ -143,9 +150,10 @@ class demo_build {
   }
   
   exec { "compile_mondrian":
-    command   => "/bin/bash -c 'ant compile'",
+    command   => "/bin/bash -c 'ant cmdrunner'",
     creates   => "$mondrian_src/classes/",
     cwd       => "$mondrian_src",
+    environment => ["driver.classpath=/usr/share/java/mysql-connector-java.jar"],
     logoutput => "true",
     timeout   => "600",
     user      => "vagrant",
