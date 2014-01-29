@@ -1,7 +1,16 @@
 # Note I'm not defining any nodes since this particular VM is a single instance box.
 
+include apt
+apt::ppa { "ppa:chris-lea/protobuf": }
+package { ["protobuf-compiler",
+           "libprotobuf-dev"]:
+  ensure  => present,
+  require => Apt::Ppa["ppa:chris-lea/protobuf"],
+}
+
 package { ["vim",
            "curl",
+           "perl",
            "bash"]:
   ensure => present,
 }
@@ -26,13 +35,18 @@ class { "java":
   distribution => "jdk",
   version      => "latest",
 }
-
+->
+exec { "fixjdk":
+  path    => "/usr/bin:/usr/sbin:/bin:/sbin",
+  command => "update-java-alternatives --set ${java::use_java_alternative}",
+}
 
 file { "java_home":
   path    => "/etc/profile.d/java-path.sh",
   content => "export JAVA_HOME=${java::java_home}\n",
   owner   => root,
   group   => root,
+  require => Class["java"],
 }
 
 
@@ -51,14 +65,6 @@ package { ["ant",
 
 class { "hadoop":
   require => Class["java"],
-}
-
-include apt
-apt::ppa { "ppa:chris-lea/protobuf": }
-package { ["protobuf-compiler",
-           "libprotobuf-dev"]:
-  ensure  => present,
-  require => Apt::Ppa["ppa:chris-lea/protobuf"],
 }
 
 include "demo_build"

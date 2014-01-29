@@ -56,6 +56,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # View the documentation for the provider you're using for more
   # information on available options.
 
+  # Run the shellscript provisioner to do some bootstrapping of the vm
+  config.vm.provision :shell, :path => "shell/bootstrap-apt.sh"
+
+  # Run the shellscript provisioner to copy several caches out to host for persistance
+  config.vm.provision :shell, :path => "shell/extract-caches.sh"
+
   # Run the shellscript provisioner to enable librarian-puppet
   config.vm.provision :shell, :path => "shell/install-librarian-puppet.sh"
 
@@ -79,7 +85,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #
   config.vm.provision :puppet do |puppet|
     puppet.manifests_path = "puppet/manifests"
-    puppet.options = "--hiera_config /vagrant/puppet/hiera.yaml"
+    puppet.options = "--hiera_config /vagrant/puppet/hiera.yaml --graph --graphdir /vagrant"
   end
 
   # Enable provisioning with chef solo, specifying a cookbooks path, roles

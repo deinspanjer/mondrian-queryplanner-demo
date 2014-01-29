@@ -8,6 +8,7 @@ class demo_build {
       command => "/usr/bin/perl -pi -e 's/${pattern_no_slashes}/${replacement_no_slashes}/' '${file}'",
       onlyif  => "/usr/bin/perl -ne 'BEGIN { \$ret = 1; } \$ret = 0 if /${pattern_no_slashes}/ && ! /\\Q${replacement_no_slashes}\\E/; END { exit \$ret; }' '${file}'",
       alias   => "exec_$name",
+      require => Package["perl"],
     }
   }
   
@@ -19,6 +20,12 @@ class demo_build {
   $tajo_dist    = "$tajo_src/tajo-dist"
   $tajo_home    = "$tajo_dist/target/tajo-0.8.0-SNAPSHOT"
   
+  file { "ln_hadoop":
+    path    => "/home/vagrant/hadoop",
+    target  => "${hadoop::hadoop_home}",
+    ensure  => "link",
+    require => Class["hadoop"],
+  }
   
   file { "vagrant_ssh_private_key":
     ensure  => "file",
@@ -57,19 +64,14 @@ class demo_build {
     require  => File["$src"],
   }
   
-  notify { "compile_tajo_warn":
-    message => "Starting Tajo compilation.  This might take up to 10 minutes with no further messages until completion.",
-    before  => Exec["compile_tajo"],
-  }
-  
   exec { "compile_tajo":
-    command   => "/bin/bash -c 'mvn package -DskipTests -Pdist'",
+    command   => "/bin/bash -c 'javac -version; mvn package -DskipTests -Pdist'",
     creates   => "$tajo_home",
     cwd       => "$tajo_src",
     logoutput => "true",
     timeout   => "600",
     user      => "vagrant",
-    require   => [ Class["java"], Package["protobuf-compiler"], Class["hadoop"], VcsRepo["$tajo_src"] ],
+    require   => [ Exec["fixjdk"], Package["protobuf-compiler"], Class["hadoop"], VcsRepo["$tajo_src"] ],
   }
   
   file { "copy_tajo_demo_data":
@@ -96,6 +98,13 @@ class demo_build {
     require => Exec["compile_tajo"],
   }
   
+  file { "ln_tajo":
+    path    => "/home/vagrant/tajo",
+    target  => "$tajo_home",
+    ensure  => "link",
+    require => Exec["compile_tajo"],
+  }
+
   file_line { "tajo_env_java_home":
     path    => "$tajo_home/conf/tajo-env.sh",
     line    => "export JAVA_HOME=${java::java_home}",
@@ -111,23 +120,23 @@ class demo_build {
   }
   
   exec { "start_tajo":
-    command   => "/bin/bash -c 'bin/start-tajo.sh'",
+    command   => "/bin/bash -c 'java -version; bin/start-tajo.sh'",
     creates   => "/tmp/tajo-vagrant-master.pid",
     cwd       => "$tajo_home",
     logoutput => "true",
     timeout   => "30",
-    user      => "vagrant",
+    #user      => "vagrant",
     require   => [ File["vagrant_ssh_known_host"], File_line["tajo_env_hadoop_home"] ],
   }
   
   exec { "load_tajo_demo_data":
-    command   => "/bin/bash -c 'bin/tsql -f $tajo_home/demo/steelwheels/SteelWheels.sql'",
+    command   => "/bin/bash -c 'java -version; bin/tsql -f $tajo_home/demo/steelwheels/SteelWheels.sql'",
     creates   => "/tmp/tajo-vagrant-demo-data-loaded",
     cwd       => "$tajo_home",
     logoutput => "true",
     timeout   => "30",
     user      => "vagrant",
-    require   => File_line["tajo_env_hadoop_home"],
+    require   => [ Exec["start_tajo"], Replace["interpolate_tajo_demo_data"] ],
   }
   
   file { "tajo_demo_data_loaded_flag":
@@ -154,19 +163,21 @@ class demo_build {
     require => VcsRepo["$mondrian_src"],
   }
   
-  notify { "compile_mondrian_warn":
-    message => "Starting Mondrian compilation.  This might take up to 10 minutes with no further messages until completion.",
-    before  => Exec["compile_mondrian"],
-  }
-  
   exec { "compile_mondrian":
-    command   => "/bin/bash -c 'ant -Dtests.skip=true jar'",
+    command   => "/bin/bash -c 'javac -version; printenv; TAJO_HOME=$tajo_home HADOOP_HOME=${hadoop::hadoop_home} ant -Dtests.skip=true jar'",
     creates   => "$mondrian_src/classes/",
     cwd       => "$mondrian_src",
     logoutput => "true",
     timeout   => "600",
     user      => "vagrant",
-    require   => [ Class["java"], File["mondrian_properties"], File["tajo_home"] ],
+    require   => [ Exec["fixjdk"], File["mondrian_properties"], File["tajo_home"] ],
+  }
+
+  file { "ln_mondrian":
+    path    => "/home/vagrant/mondrian",
+    target  => "$mondrian_src",
+    ensure  => "link",
+    require => VcsRepo["$mondrian_src"],
   }
   
   mysql::db { "steelwheels":

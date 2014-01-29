@@ -9,6 +9,12 @@ class hadoop {
   $yarn_log_dir  = "${hadoop_logs_basedir}/yarn"
   $mapred_log_dir  = "${hadoop_logs_basedir}/mapred"
 
+  $hadoop_cache = "/tmp/hadoop"
+
+  file { "$hadoop_cache":
+    ensure => "directory",
+  }
+  
   file { ["/srv/hadoop/",  "/srv/hadoop/namenode", "/srv/hadoop/datanode/"]:
     ensure => "directory",
     owner => "hdfs",
@@ -16,28 +22,28 @@ class hadoop {
   }
   
   exec { "download_grrr":
-    command => "wget --no-check-certificate http://raw.github.com/fs111/grrrr/master/grrr -O /tmp/grrr && chmod +x /tmp/grrr",
+    command => "wget --no-check-certificate http://raw.github.com/fs111/grrrr/master/grrr -O $hadoop_cache/grrr && chmod +x $hadoop_cache/grrr",
     path => $path,
-    creates => "/tmp/grrr",
+    creates => "$hadoop_cache/grrr",
   }
 
   exec { "download_hadoop":
-    command => "/tmp/grrr /hadoop/common/hadoop-${hadoop_version}/$hadoop_tarball -O /vagrant/$hadoop_tarball --read-timeout=5 --tries=0",
+    command => "$hadoop_cache/grrr /hadoop/common/hadoop-${hadoop_version}/$hadoop_tarball -O $hadoop_cache/$hadoop_tarball --read-timeout=5 --tries=0",
     timeout => 1800,
     path => $path,
-    creates => "/vagrant/$hadoop_tarball",
+    creates => "$hadoop_cache/$hadoop_tarball",
     require => Exec["download_grrr"]
   }
 
   exec { "download_checksum":
-    command => "/tmp/grrr /hadoop/common/hadoop-${hadoop_version}/$hadoop_tarball_checksums -O /vagrant/$hadoop_tarball_checksums --read-timeout=5 --tries=0",
+    command => "$hadoop_cache/grrr /hadoop/common/hadoop-${hadoop_version}/$hadoop_tarball_checksums -O $hadoop_cache/$hadoop_tarball_checksums --read-timeout=5 --tries=0",
     timeout => 1800,
     path => $path,
-    unless => "ls /vagrant | grep ${hadoop_tarball_checksums}",
+    unless => "ls $hadoop_cache | grep ${hadoop_tarball_checksums}",
     require => Exec["download_grrr"],
   }
   
-  file { "/tmp/verifier":
+  file { "$hadoop_cache/verifier":
       source => "puppet:///modules/hadoop/verifier",
       mode => 755,
       owner => root,
@@ -45,13 +51,13 @@ class hadoop {
   }
 
   exec{ "verify_tarball":
-    command =>  "/tmp/verifier /vagrant/${hadoop_tarball_checksums}", 
+    command =>  "$hadoop_cache/verifier $hadoop_cache/${hadoop_tarball_checksums}", 
     path => $path,
-    require => [File["/tmp/verifier"], Exec["download_hadoop"], Exec["download_checksum"]]
+    require => [File["$hadoop_cache/verifier"], Exec["download_hadoop"], Exec["download_checksum"]]
   }
 
   exec { "unpack_hadoop" :
-    command => "tar xf /vagrant/${hadoop_tarball} -C /opt",
+    command => "tar xf $hadoop_cache/${hadoop_tarball} -C /opt",
     path => $path,
     creates => "${hadoop_home}",
     require => Exec["verify_tarball"]
