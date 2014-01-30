@@ -9,7 +9,7 @@ class hadoop {
   $yarn_log_dir  = "${hadoop_logs_basedir}/yarn"
   $mapred_log_dir  = "${hadoop_logs_basedir}/mapred"
 
-  $hadoop_cache = "/tmp/hadoop"
+  $hadoop_cache = "/vagrant/.cache/hadoop"
 
   file { "$hadoop_cache":
     ensure => "directory",
@@ -46,12 +46,12 @@ class hadoop {
   file { "$hadoop_cache/verifier":
       source => "puppet:///modules/hadoop/verifier",
       mode => 755,
-      owner => root,
-      group => root,
+      owner => vagrant,
+      group => vagrant,
   }
 
   exec{ "verify_tarball":
-    command =>  "$hadoop_cache/verifier $hadoop_cache/${hadoop_tarball_checksums}", 
+    command =>  "$hadoop_cache/verifier $hadoop_cache ${hadoop_tarball_checksums}", 
     path => $path,
     require => [File["$hadoop_cache/verifier"], Exec["download_hadoop"], Exec["download_checksum"]]
   }

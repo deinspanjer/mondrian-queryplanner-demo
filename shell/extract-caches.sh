@@ -8,7 +8,6 @@ mkdir -p $VC
 
 # I'm iterating through tuples of local dir to shared-dir
 OLDIFS=$IFS; IFS=','
-#XXX hadoop wget is too slow with vagrant virtualbox shared folder: /tmp/hadoop,$VC/hadoop
 for c in $AC,$VC/apt-archives $VH/.ivy2,$VC/ivy $VH/.m2,$VC/maven $VH/.subfloor,$VC/subfloor
 do
     set $c
@@ -18,6 +17,7 @@ do
         else
             mkdir -p $2
         fi
+        rm -rf $1
         ln -s $2 $1
     fi
 done

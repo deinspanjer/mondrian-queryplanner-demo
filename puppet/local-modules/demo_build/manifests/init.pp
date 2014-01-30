@@ -65,7 +65,7 @@ class demo_build {
   }
   
   exec { "compile_tajo":
-    command   => "/bin/bash -c 'javac -version; mvn package -DskipTests -Pdist'",
+    command   => "/bin/bash -lc 'USER=vagrant mvn package -DskipTests -Pdist'",
     creates   => "$tajo_home",
     cwd       => "$tajo_src",
     logoutput => "true",
@@ -120,21 +120,21 @@ class demo_build {
   }
   
   exec { "start_tajo":
-    command   => "/bin/bash -c 'java -version; bin/start-tajo.sh'",
+    command   => "/bin/bash -lc 'java -version; bin/start-tajo.sh'",
     creates   => "/tmp/tajo-vagrant-master.pid",
     cwd       => "$tajo_home",
     logoutput => "true",
     timeout   => "30",
-    #user      => "vagrant",
+    user      => "vagrant",
     require   => [ File["vagrant_ssh_known_host"], File_line["tajo_env_hadoop_home"] ],
   }
   
   exec { "load_tajo_demo_data":
-    command   => "/bin/bash -c 'java -version; bin/tsql -f $tajo_home/demo/steelwheels/SteelWheels.sql'",
+    command   => "/bin/bash -lc 'USER=vagrant bin/tsql -f $tajo_home/demo/steelwheels/SteelWheels.sql'",
     creates   => "/tmp/tajo-vagrant-demo-data-loaded",
     cwd       => "$tajo_home",
     logoutput => "true",
-    timeout   => "30",
+    timeout   => "60",
     user      => "vagrant",
     require   => [ Exec["start_tajo"], Replace["interpolate_tajo_demo_data"] ],
   }
@@ -164,7 +164,7 @@ class demo_build {
   }
   
   exec { "compile_mondrian":
-    command   => "/bin/bash -c 'javac -version; printenv; TAJO_HOME=$tajo_home HADOOP_HOME=${hadoop::hadoop_home} ant -Dtests.skip=true jar'",
+    command   => "/bin/bash -lc 'USER=vagrant TAJO_HOME=$tajo_home HADOOP_HOME=${hadoop::hadoop_home} ant -Dtests.skip=true jar'",
     creates   => "$mondrian_src/classes/",
     cwd       => "$mondrian_src",
     logoutput => "true",
